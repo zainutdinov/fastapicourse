@@ -56,17 +56,14 @@ def update_hotel(
 def partial_update_hotel(
     hotel_id: int,
     title: str | None = Body(None, embed=True),
-    name: str = Body(None, embed=True),
+    name: str | None = Body(None, embed=True),
 ):
     global hotels
     for hotel in hotels:
         if hotel["id"] == hotel_id:
-            if title and name:
+            if title is not None:
                 hotel["title"] = title
-                hotel["name"] = name
-            elif title:
-                hotel["title"] = title
-            elif name:
+            if name is not None:
                 hotel["name"] = name
             break
     return {"status": "OK"}
