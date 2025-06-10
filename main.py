@@ -72,6 +72,7 @@ def partial_update_hotel(
     return {"status": "OK"}
 
 
+
 @app.delete("/hotels/{hotel_id}")
 def delete_hotel(hotel_id: int):
     global hotels
