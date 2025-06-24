@@ -1,10 +1,12 @@
 from fastapi import Query, APIRouter, Body
+
 from sqlalchemy import insert, select, func
 
+from repositories.hotels import HotelsRepository
 from src.api.dependencies import PaginationDep
-from src.schemas.hotels import Hotel, HotelPATCH
 from src.database import async_session_maker
 from src.models.hotels import HotelsOrm
+from src.schemas.hotels import Hotel, HotelPATCH
 
 router = APIRouter(prefix="/hotels", tags=["Отели"])
 
@@ -12,24 +14,17 @@ router = APIRouter(prefix="/hotels", tags=["Отели"])
 @router.get("")
 async def get_hotels(
         pagination: PaginationDep,
+        location: str | None = Query(None, description="Локация"),
         title: str | None = Query(None, description="Название отеля"),
-        location: str | None = Query(None, description="Адрес отеля")
 ):
     per_page = pagination.per_page or 5
     async with async_session_maker() as session:
-        query = select(HotelsOrm)
-        if title:
-            query = query.filter(func.lower(HotelsOrm.title).like(f'%{title.strip().lower()}%'))
-        if location:
-            query = query.filter(func.lower(HotelsOrm.location).like(f'%{location.strip().lower()}%'))
-        query = (
-            query
-            .limit(per_page)
-            .offset(per_page * (pagination.page-1))
+        return await HotelsRepository(session).get_all(
+            location=location,
+            title=title,
+            limit=per_page,
+            offset=per_page * (pagination.page - 1)
         )
-        result = await session.execute(query)
-        hotels = result.scalars().all()
-        return hotels
 
 
 @router.post("")
@@ -38,14 +33,14 @@ async def create_hotel(hotel_data: Hotel = Body(openapi_examples={
         "summary": "Сочи",
         "value": {
             "title": "Отель Сочи 5 звезд у моря",
-            "location": "sochi_u_morya",
+            "location": "ул. Моря, 1",
         }
     },
     "2": {
         "summary": "Дубай",
         "value": {
             "title": "Отель Дубай У фонтана",
-            "location": "dubai_fountain",
+            "location": "ул. Шейха, 2",
         }
     }
 })
@@ -54,6 +49,7 @@ async def create_hotel(hotel_data: Hotel = Body(openapi_examples={
         add_hotel_stmt = insert(HotelsOrm).values(**hotel_data.model_dump())
         await session.execute(add_hotel_stmt)
         await session.commit()
+
     return {"status": "OK"}
 
 
