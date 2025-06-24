@@ -1,4 +1,4 @@
-from sqlalchemy import select, insert
+from sqlalchemy import select, insert, update, delete as sa_delete
 
 
 class BaseRepository:
@@ -21,3 +21,11 @@ class BaseRepository:
         stmt = insert(self.model).values(**data.model_dump()).returning(self.model)
         result = await self.session.execute(stmt)
         return result.scalar_one()
+
+    async def edit(self, data, **filter_by):
+        stmt = update(self.model).filter_by(**filter_by).values(**data.model_dump())
+        await self.session.execute(stmt)
+
+    async def delete(self, **filter_by):
+        stmt = sa_delete(self.model).filter_by(**filter_by)
+        await self.session.execute(stmt)
