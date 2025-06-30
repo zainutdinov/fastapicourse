@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Response
 from src.api.dependencies import UserIdDep
 from src.repositories.users import UsersRepository
 from src.database import async_session_maker
-from src.schemas.users import UserRequestAdd, UserAdd
+from src.schemas.users import User, UserRequestAdd, UserAdd
 from src.services.auth import AuthService
 
 router = APIRouter(prefix="/auth", tags=["Авторизация и аутентификация"])
@@ -38,10 +38,18 @@ async def login_user(
         return {"access_token": access_token}
 
 
-@router.get("/me")
+@router.get("/me",)
 async def get_me(
         user_id: UserIdDep,
 ):
     async with async_session_maker() as session:
         user = await UsersRepository(session).get_one_or_none(id=user_id)
-        return user
+        return User.model_validate(user)
+
+
+@router.post("/logout")
+async def logout(
+        response: Response,
+):
+    response.delete_cookie(key="access_token")
+    return {"status": "OK"}
