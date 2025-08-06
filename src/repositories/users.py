@@ -3,7 +3,7 @@ from pydantic import EmailStr
 
 from src.repositories.base import BaseRepository
 from src.models.users import UsersOrm
-from src.schemas.users import User, UserWithHashPassword
+from src.schemas.users import User, UserWithHashedPassword
 
 
 class UsersRepository(BaseRepository):
@@ -14,4 +14,4 @@ class UsersRepository(BaseRepository):
         query = select(self.model).filter_by(email=email)
         result = await self.session.execute(query)
         model = result.scalars().one()
-        return UserWithHashPassword.model_validate(model)
+        return UserWithHashedPassword.model_validate(model)
