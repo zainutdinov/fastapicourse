@@ -50,3 +50,7 @@ class BaseRepository:
     async def delete(self, **filter_by) -> None:
         delete_stmt = delete(self.model).filter_by(**filter_by)
         await self.session.execute(delete_stmt)
+
+    async def delete_bulk(self, field: str, values: list) -> None:
+        delete_stmt = delete(self.model).where(getattr(self.model, field).in_(values))
+        await self.session.execute(delete_stmt)

@@ -40,11 +40,23 @@ async def create_room(hotel_id: int, db: DBDep, room_data: RoomAddRequest = Body
 async def edit_room(
         hotel_id: int,
         room_id: int,
-        room_data: RoomAddRequest,
         db: DBDep,
+        room_data: RoomAddRequest = Body(),
 ):
     _room_data = RoomAdd(hotel_id=hotel_id, **room_data.model_dump())
     await db.rooms.edit(_room_data, id=room_id)
+
+    facilities_room = await db.rooms_facilities.get_filtered(room_id=room_id)
+    facilities_room_ids = [f.facility_id for f in facilities_room]
+    add_f, del_f = [], []
+    add_f = [f for f in room_data.facilities_ids if f not in facilities_room_ids]
+    del_f = [f for f in facilities_room_ids if f not in room_data.facilities_ids]
+
+    rooms_facilities_data_add = [RoomFacilityAdd(room_id=room_id, facility_id=f_id) for f_id in add_f]
+    await db.rooms_facilities.add_bulk(rooms_facilities_data_add)
+
+    await db.rooms_facilities.delete_bulk(field='facility_id', values=del_f)
+
     await db.commit()
     return {"status": "OK"}
 
